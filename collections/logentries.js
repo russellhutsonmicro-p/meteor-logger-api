@@ -5,9 +5,11 @@ Schemas = {};
 Schemas.LogEntries = new SimpleSchema({
   request: {
     type: Object,
+    blackbox: true // see http://stackoverflow.com/questions/29464393/storing-arbitrary-object-inside-a-field-with-meteor-simple-schema
   },
   content: {
     type: Object,
+    blackbox: true
   },
 
   sessionId: {
@@ -70,8 +72,19 @@ if (Meteor.isServer) {
             post: {
 	        	  authRequired: false,
 	            action: function () {
+                console.log('bodyParams: '+JSON.stringify(this.bodyParams)); 
                 request = {ip: this.request.connection.remoteAddress};
-                  newrecord = {request: request, content: this.bodyParams.content, sessionId: this.bodyParams.sessionId};
+                
+                sessionId = this.bodyParams.sessionId;
+                delete this.bodyParams.sessionId;
+                console.log('bodyParams: '+JSON.stringify(this.bodyParams)); 
+
+                 if (this.bodyParams.text) {
+                  content = {text: this.bodyParams.text};
+                 } else {
+                  content = this.bodyParams; // object
+                 }
+                  newrecord = {request: request, "content": content, "sessionId": sessionId};
                   console.log('Attempting to insert '+JSON.stringify(newrecord));
 
                   if (LogEntries.insert(newrecord)) {
